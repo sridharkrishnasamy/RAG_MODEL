@@ -7,6 +7,7 @@ def main():
     result, policies = evaluate_action(action)
 
     print("\n--- Decision ---")
+    print("\n Decision ")
     print("Decision:", result["decision"])
     print("\nReasoning:")
     print(result["reasoning"])
@@ -15,14 +16,17 @@ def main():
     for s in result["suggestions"]:
         print("-", s)
 
-    # print("\nReferenced Policies:")
-    # for p_id in result["referenced_policies"]:
-    #     print("-", p_id)
+        
+    print("\nReferenced Policies:")
+    for p_id in result["referenced_policies"]:
+        print("-", p_id)
 
-    # print("\n--- Policies Considered ---")
-    # for p in policies:
-    #     print(f"\n[{p['id']}] {p['title']}")
-    #     print(p["text"])
+    print("\n--- Policies Considered ---")
+    for p in policies:
+        print(f"\n[{p['id']}] {p['title']}")
+        print(p["text"])
+    
 
 if __name__ == "__main__":
+
     main()

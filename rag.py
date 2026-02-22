@@ -4,7 +4,7 @@ import google.generativeai as genai
 
 from policies import POLICIES
 
-genai.configure(api_key="AIzaSyDMT2yTbeuZ6khTwM0p8w2WKgBtz5luLWk")
+genai.configure(api_key="AIzaSyD8lk1Vj5JZOtQQ9jMmxJsFOM-SDuN_A0M")
 
 
 def tokenize(text: str):
