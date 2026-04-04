@@ -3,7 +3,7 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-from pdf_processor import extract_text_from_pdf, extract_metadata_from_pdf, save_uploaded_pdf
+from pdf_processor import extract_text_from_pdf, extract_metadata_from_pdf, save_uploaded_pdf, validate_document_type
 from vector_store import create_policy_vector_store, get_policy_file_names
 from compliance_checker import evaluate_compliance, summarize_pdf, API_KEY_AVAILABLE
 
@@ -48,7 +48,7 @@ def initialize_vector_store():
 
 
 def main():
-    st.markdown('<p class="header-text">📋 PDF Compliance & Summary Tool</p>', unsafe_allow_html=True)
+    st.markdown('<p class="header-text"> PDF Compliance & Summary Tool</p>', unsafe_allow_html=True)
     st.markdown("Upload a document to check compliance against regulations in `data/policies/`")
 
     if not API_KEY_AVAILABLE:
@@ -69,11 +69,11 @@ def main():
     # Sidebar
     policy_files = get_policy_file_names()
     with st.sidebar:
-        st.markdown("### ⚙️ Settings")
+        st.markdown("### Regulus")
         mode = st.radio("Select Mode:", ["Compliance Check", "Summarization"])
 
         st.markdown("---")
-        st.markdown("### 📚 Loaded Policy PDFs")
+        st.markdown("### Loaded Policy PDFs")
         if policy_files:
             for f in policy_files:
                 st.markdown(f"- 📄 {f}")
@@ -83,27 +83,27 @@ def main():
         else:
             st.warning("No PDFs found in `data/policies/`")
 
-        st.markdown("---")
-        st.markdown("### 🔑 API Status")
-        if API_KEY_AVAILABLE:
-            st.success("✅ Groq API Key Configured")
-        else:
-            st.error("❌ Groq API Key Not Set")
+        # st.markdown("---")
+        # st.markdown("### 🔑 API Status")
+        # if API_KEY_AVAILABLE:
+        #     st.success("✅ Groq API Key Configured")
+        # else:
+        #     st.error("❌ Groq API Key Not Set")
 
-        # Button to rebuild vector store
-        if st.button("🔄 Rebuild Vector Store"):
-            # Delete cached index
-            import shutil
-            cache_dir = os.path.join("data", "vector_store")
-            if os.path.exists(cache_dir):
-                shutil.rmtree(cache_dir)
-            if 'vector_store' in st.session_state:
-                del st.session_state['vector_store']
-            st.rerun()
+        # # Button to rebuild vector store
+        # if st.button("🔄 Rebuild Vector Store"):
+        #     # Delete cached index
+        #     import shutil
+        #     cache_dir = os.path.join("data", "vector_store")
+        #     if os.path.exists(cache_dir):
+        #         shutil.rmtree(cache_dir)
+        #     if 'vector_store' in st.session_state:
+        #         del st.session_state['vector_store']
+        #     st.rerun()
 
     # --- Mode: Compliance Check ---
     if mode == "Compliance Check":
-        st.markdown("### 🔍 Compliance Evaluation")
+        st.markdown("###  Compliance Evaluation")
 
         if not API_KEY_AVAILABLE:
             st.error("❌ Groq API Key Required for Compliance Checking")
@@ -123,14 +123,25 @@ def main():
                 with col1:
                     st.info(f"📄 File: {uploaded_file.name}")
                 with col2:
-                    analyze_btn = st.button("🔎 Analyze Compliance", use_container_width=True)
+                    analyze_btn = st.button(" Analyze Compliance", use_container_width=True)
 
                 if analyze_btn:
                     try:
                         pdf_path = save_uploaded_pdf(uploaded_file)
                         st.session_state.pdf_text = extract_text_from_pdf(pdf_path)
-                        st.session_state.pdf_metadata = extract_metadata_from_pdf(pdf_path)
-                        st.session_state.analysis_done = True
+                        
+                        # Validate document type
+                        is_valid, doc_type = validate_document_type(st.session_state.pdf_text)
+                        
+                        if not is_valid:
+                            st.error("❌ Invalid Document - Upload a valid document")
+                            st.info("Accepted document types: Sale Deed, IT Terms & Conditions, or Legal/Policy Documents")
+                            st.session_state.analysis_done = False
+                        else:
+                            st.session_state.pdf_metadata = extract_metadata_from_pdf(pdf_path)
+                            st.session_state.doc_type = doc_type
+                            st.session_state.analysis_done = True
+                            st.success(f" Document Type: {doc_type}")
                     except Exception as e:
                         st.error(f"Error processing PDF: {str(e)}")
 
@@ -146,7 +157,7 @@ def main():
                 # Show compliance results
                 if st.session_state.get("analysis_done"):
                     st.markdown("---")
-                    st.markdown("### 📊 Compliance Assessment")
+                    st.markdown("###  Compliance Assessment")
 
                     with st.spinner("Evaluating compliance against loaded regulations..."):
                         result = evaluate_compliance(
@@ -156,7 +167,7 @@ def main():
 
                     # Status
                     if result["compliant"] is None:
-                        st.warning("⚠️ Assessment Unavailable")
+                        st.warning(" Assessment Unavailable")
                     elif result["compliant"]:
                         st.markdown(
                             "<p style='font-size:1.5rem; color:#28a745; font-weight:bold'>✅ COMPLIANT</p>",
@@ -168,29 +179,29 @@ def main():
 
                     # Issues
                     if result["issues"]:
-                        st.markdown("#### ⚠️ Issues Found:")
+                        st.markdown("####  Issues Found:")
                         for i, issue in enumerate(result["issues"], 1):
                             st.warning(f"{i}. {issue}")
 
                     # Detailed reasoning
-                    st.markdown("#### 📝 Assessment Details:")
+                    st.markdown("####  Assessment Details:")
                     st.info(result["reasoning"])
 
                     # Suggestions
                     if result["suggestions"]:
-                        st.markdown("#### 💡 Recommendations:")
+                        st.markdown("#### Recommendations:")
                         for i, s in enumerate(result["suggestions"], 1):
                             st.success(f"{i}. {s}")
 
                     # Referenced policy files
                     if result["referenced_policies"]:
-                        st.markdown("#### 📚 Regulations Referenced:")
+                        st.markdown("####  Regulations Referenced:")
                         for src in result["referenced_policies"]:
                             st.markdown(f"<div class='policy-box'>📄 {src}</div>", unsafe_allow_html=True)
 
     # --- Mode: Summarization ---
     elif mode == "Summarization":
-        st.markdown("### 📄 Document Summarization")
+        st.markdown("### Document Summarization")
 
         if not API_KEY_AVAILABLE:
             st.error("❌ Groq API Key Required for Summarization")
@@ -203,24 +214,32 @@ def main():
             )
 
             if uploaded_file:
-                if st.button("📝 Generate Summary", use_container_width=True):
+                if st.button(" Generate Summary", use_container_width=True):
                     try:
                         pdf_path = save_uploaded_pdf(uploaded_file)
                         pdf_text = extract_text_from_pdf(pdf_path)
+                        
+                        # Validate document type
+                        is_valid, doc_type = validate_document_type(pdf_text)
+                        
+                        if not is_valid:
+                            st.error("❌ Invalid Document - Upload a valid document")
+                            st.info("Accepted document types: Sale Deed, IT Terms & Conditions, or Legal/Policy Documents")
+                        else:
+                            st.success(f" Document Type: {doc_type}")
+                            with st.spinner("Generating summary..."):
+                                summary = summarize_pdf(pdf_text)
 
-                        with st.spinner("Generating summary..."):
-                            summary = summarize_pdf(pdf_text)
+                            st.markdown("#### Summary:")
+                            st.info(summary)
 
-                        st.markdown("#### Summary:")
-                        st.info(summary)
-
-                        with st.expander("👀 Original Text Preview"):
-                            st.text_area(
-                                "Document excerpt:",
-                                value=pdf_text[:2000] + "..." if len(pdf_text) > 2000 else pdf_text,
-                                height=200,
-                                disabled=True
-                            )
+                            with st.expander("Original Text Preview"):
+                                st.text_area(
+                                    "Document excerpt:",
+                                    value=pdf_text[:2000] + "..." if len(pdf_text) > 2000 else pdf_text,
+                                    height=200,
+                                    disabled=True
+                                )
                     except Exception as e:
                         st.error(f"Error processing PDF: {str(e)}")
 

@@ -6,6 +6,41 @@ import tempfile
 from pypdf import PdfReader
 
 
+def validate_document_type(text: str) -> tuple[bool, str]:
+    """
+    Validate if the document is a recognized valid document type.
+    
+    Checks for: Sale Deed, IT Terms & Conditions, Legal/Policy documents.
+    
+    Args:
+        text: Extracted text from the PDF
+        
+    Returns:
+        Tuple of (is_valid, document_type)
+    """
+    text_lower = text.lower()
+    
+    # Keywords for different valid document types
+    sale_deed_keywords = ["sale deed", "property", "seller", "buyer", "conveyance", "registered", "immovable property"]
+    it_terms_keywords = ["terms and conditions", "terms of service", "software", "license", "intellectual property", "it services", "software services"]
+    legal_keywords = ["agreement", "policy", "compliance", "regulation", "governing", "effective date", "hereby"]
+    
+    # Count keyword matches
+    sale_deed_count = sum(1 for kw in sale_deed_keywords if kw in text_lower)
+    it_terms_count = sum(1 for kw in it_terms_keywords if kw in text_lower)
+    legal_count = sum(1 for kw in legal_keywords if kw in text_lower)
+    
+    # Document is valid if it has reasonable keyword matches
+    if sale_deed_count >= 3:
+        return True, "Sale Deed"
+    elif it_terms_count >= 3:
+        return True, "IT Terms & Conditions"
+    elif legal_count >= 3:
+        return True, "Legal/Policy Document"
+    
+    return False, "Unknown"
+
+
 def extract_text_from_pdf(pdf_path: str) -> str:
     """
     Extract all text from a PDF file.
